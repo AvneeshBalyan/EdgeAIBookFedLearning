@@ -1,0 +1,59 @@
+version: '3'
+services:
+  server:
+    build: ./server
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./weights:/app/weights
+      - ./models:/app/models
+    hostname: fl-server  # Add this line
+    networks:
+      - fl_network
+    container_name: server 
+
+  client1:
+    build: ./client
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./weights:/app/client1_weights
+    environment:
+      - CLIENT_ID=1
+      - SERVER_ADDRESS=server:8080
+    networks:
+      - fl_network
+    depends_on:
+      - server
+
+  client2:
+    build: ./client
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./weights:/app/client2_weights
+    environment:
+      - CLIENT_ID=2
+      - SERVER_ADDRESS=server:8080
+    networks:
+      - fl_network
+    depends_on:
+      - server
+
+  client3:
+    build: ./client
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./weights:/app/client3_weights
+    environment:
+      - CLIENT_ID=3
+      - SERVER_ADDRESS=server:8080
+    networks:
+      - fl_network
+    depends_on:
+      - server
+
+networks:
+  fl_network:
+    driver: bridge
