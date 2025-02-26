@@ -99,7 +99,7 @@ class ArrhythmiaClient(fl.client.NumPyClient):
         accuracy = correct / num_samples
         print(f"Test set: Average loss: {loss:.4f}, Accuracy: {correct}/{num_samples} ({100.0 * accuracy:.2f}%)")
         return loss, num_samples, {"accuracy": accuracy}
-import time
+
 def main():
     client_id = int(os.getenv("CLIENT_ID", 1))
     server_address = os.getenv("SERVER_ADDRESS", "server:8080")
