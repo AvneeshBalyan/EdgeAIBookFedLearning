@@ -7,7 +7,7 @@ services:
     volumes:
       - ./weights:/app/weights
       - ./models:/app/models
-    hostname: fl-server  # Add this line
+    hostname: fl-server 
     networks:
       - fl_network
     container_name: server 
