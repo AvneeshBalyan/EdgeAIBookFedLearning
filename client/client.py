@@ -11,21 +11,15 @@ import numpy as np
 import time
 from models.net import ArrhythmiaNet
 
-
 def load_data(client_id):
     """Load and preprocess the Arrhythmia dataset for a specific client."""
     df = pd.read_csv('/app/data/arrhythmia.csv')
-    
     X = df[['MLII', 'V5']].values
-    
     bins = np.linspace(df['MLII'].min(), df['MLII'].max(), 5)
     y = np.digitize(df['MLII'], bins) - 1  # Subtract 1 to make labels start from 0
-    
     print(f"Unique labels: {np.unique(y)}")
-   
     scaler = StandardScaler()
     X = scaler.fit_transform(X)
-
     n_clients = 3
     client_idx = client_id - 1
     X_split = np.array_split(X, n_clients)[client_idx]
@@ -34,8 +28,6 @@ def load_data(client_id):
     X_train, X_test, y_train, y_test = train_test_split(
         X_split, y_split, test_size=0.2, random_state=42
     )
-    
-    # Create data loaders
     train_loader = DataLoader(
         TensorDataset(
             torch.FloatTensor(X_train),
@@ -52,11 +44,8 @@ def load_data(client_id):
         ),
         batch_size=32,
         shuffle=False
-    )
-    
+    )    
     return train_loader, test_loader
-
-
 
 class ArrhythmiaClient(fl.client.NumPyClient):
     def __init__(self, model, train_loader, test_loader):
@@ -80,7 +69,6 @@ class ArrhythmiaClient(fl.client.NumPyClient):
         """Train the model on the local dataset."""
         self.set_parameters(parameters)
         
-        # Local training loop
         for epoch in range(5):  # Local epochs
             for batch_idx, (data, target) in enumerate(self.train_loader):
                 self.optimizer.zero_grad()
@@ -95,11 +83,9 @@ class ArrhythmiaClient(fl.client.NumPyClient):
                           f"({100. * batch_idx / len(self.train_loader):.0f}%)]\tLoss: {loss.item():.6f}")
 
         return self.get_parameters(config={}), len(self.train_loader.dataset), {}
-
     def evaluate(self, parameters, config):
         """Evaluate the model on the local test dataset."""
-        self.set_parameters(parameters)
-        
+        self.set_parameters(parameters)        
         loss = 0
         correct = 0
         with torch.no_grad():
@@ -108,37 +94,23 @@ class ArrhythmiaClient(fl.client.NumPyClient):
                 loss += self.criterion(output, target).item()
                 pred = output.argmax(dim=1, keepdim=True)
                 correct += pred.eq(target.view_as(pred)).sum().item()
-
-        # Calculate average loss and accuracy
         num_samples = len(self.test_loader.dataset)
         loss /= len(self.test_loader)
         accuracy = correct / num_samples
-        
         print(f"Test set: Average loss: {loss:.4f}, Accuracy: {correct}/{num_samples} ({100.0 * accuracy:.2f}%)")
-        
         return loss, num_samples, {"accuracy": accuracy}
-
 import time
-
-
 def main():
     client_id = int(os.getenv("CLIENT_ID", 1))
     server_address = os.getenv("SERVER_ADDRESS", "server:8080")
-    
     time.sleep(10)
-    
     print(f"Starting client {client_id} with server address {server_address}")
- 
     train_loader, test_loader = load_data(client_id)
-
     model = ArrhythmiaNet()
-  
     client = ArrhythmiaClient(model, train_loader, test_loader)
     fl.client.start_numpy_client(
         server_address=server_address,  
         client=client
     )
-
-
 if __name__ == "__main__":
     main()
