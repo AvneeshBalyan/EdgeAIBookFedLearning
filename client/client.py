@@ -14,31 +14,23 @@ from models.net import ArrhythmiaNet
 
 def load_data(client_id):
     """Load and preprocess the Arrhythmia dataset for a specific client."""
-    # Read the Arrhythmia dataset
     df = pd.read_csv('/app/data/arrhythmia.csv')
     
-    # Use MLII and V5 as features
     X = df[['MLII', 'V5']].values
     
-    # Create labels (5 classes, from 0 to 4)
-    # Modify the binning to ensure labels are between 0 and 4
     bins = np.linspace(df['MLII'].min(), df['MLII'].max(), 5)
     y = np.digitize(df['MLII'], bins) - 1  # Subtract 1 to make labels start from 0
     
-    # Ensure labels are within bounds
     print(f"Unique labels: {np.unique(y)}")
-    
-    # Scale features
+   
     scaler = StandardScaler()
     X = scaler.fit_transform(X)
-    
-    # Split data for each client
+
     n_clients = 3
     client_idx = client_id - 1
     X_split = np.array_split(X, n_clients)[client_idx]
     y_split = np.array_split(y, n_clients)[client_idx]
     
-    # Create train/test split
     X_train, X_test, y_train, y_test = train_test_split(
         X_split, y_split, test_size=0.2, random_state=42
     )
@@ -133,21 +125,17 @@ def main():
     client_id = int(os.getenv("CLIENT_ID", 1))
     server_address = os.getenv("SERVER_ADDRESS", "server:8080")
     
-    # Add delay for server startup
     time.sleep(10)
     
     print(f"Starting client {client_id} with server address {server_address}")
-    
-    # Load data
+ 
     train_loader, test_loader = load_data(client_id)
-    
-    # Initialize model
+
     model = ArrhythmiaNet()
-    
-    # Start client
+  
     client = ArrhythmiaClient(model, train_loader, test_loader)
     fl.client.start_numpy_client(
-        server_address=server_address,  # Remove grpc:// prefix
+        server_address=server_address,  
         client=client
     )
 
